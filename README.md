@@ -3,10 +3,11 @@
 自研分布式 ID 生成库：雪花 ID（Snowflake）与短 ID，
 与 errx / logx 生态打通。
 
-> 当前状态：**v0.4.0 已发布**。日志/指标/基准完备；
-> 发布前终审按 [docs/roadmap.md](docs/roadmap.md) 进行中。
+> 当前状态：**v0.5.0 已发布**。规划路线收官，进入自主打磨阶段。
 
 性能参考（本机）：雪花 ~246ns/op（0 分配）、短 ID ~934ns/op。
+
+完整错误码清单见 [ERRORS.md](ERRORS.md)。
 
 ## 定位
 
