@@ -53,6 +53,14 @@ func TestNextMonotonic(t *testing.T) {
 
 // TestNextSequenceOverflow 覆盖同毫秒序列溢出等待。
 func TestNextSequenceOverflow(t *testing.T) {
+	orig := randRead
+	randRead = func(b []byte) (int, error) {
+		for i := range b {
+			b[i] = 0
+		}
+		return len(b), nil
+	}
+	defer func() { randRead = orig }()
 	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
 	clock := &fixedClock{now: base}
 	g, err := New(DefaultConfig(), WithClock(clock.get))
@@ -195,5 +203,125 @@ func TestWithClockNil(t *testing.T) {
 	}
 	if g.now == nil {
 		t.Fatal("默认时间源不应为空")
+	}
+}
+
+// TestBackwardReject 覆盖 Reject 策略。
+func TestBackwardReject(t *testing.T) {
+	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
+	clock := &fixedClock{now: base}
+	cfg := DefaultConfig()
+	cfg.Backward = StrategyReject
+	g, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Next(); err != nil {
+		t.Fatal(err)
+	}
+	clock.advance(time.Second)
+	if _, err := g.Next(); err != nil {
+		t.Fatal(err)
+	}
+	clock.advance(-time.Millisecond)
+	if _, err := g.Next(); !errors.Is(err, ErrClockBackward) {
+		t.Fatalf("Reject 策略应拒绝，实际：%v", err)
+	}
+}
+
+// TestBackwardLoose 覆盖 Loose 策略（沿用时间戳继续递增）。
+func TestBackwardLoose(t *testing.T) {
+	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
+	clock := &fixedClock{now: base}
+	cfg := DefaultConfig()
+	cfg.Backward = StrategyLoose
+	g, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id1, err := g.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	clock.advance(time.Second)
+	id2, err := g.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 回拨 1ms。
+	clock.advance(-time.Millisecond)
+	id3, err := g.Next()
+	if err != nil {
+		t.Fatalf("Loose 策略不应报错：%v", err)
+	}
+	if id3 <= id2 {
+		t.Fatalf("Loose 回拨后 ID 应继续递增：%d <= %d", id3, id2)
+	}
+	p2, _ := g.Parse(id2)
+	p3, _ := g.Parse(id3)
+	if !p3.Timestamp.Equal(p2.Timestamp) || p3.Sequence != p2.Sequence+1 {
+		t.Fatalf("Loose 应沿用时间戳并递增序列：%+v %+v", p2, p3)
+	}
+	_ = id1
+}
+
+// TestNewRandFailure 覆盖随机源失败。
+func TestNewRandFailure(t *testing.T) {
+	orig := randRead
+	randRead = func(b []byte) (int, error) { return 0, errors.New("随机源故障") }
+	defer func() { randRead = orig }()
+	if _, err := New(DefaultConfig()); !errors.Is(err, ErrRandomFailure) {
+		t.Fatalf("随机源失败应报错，实际：%v", err)
+	}
+}
+
+// TestSequenceRandomStart 覆盖序列随机起点。
+func TestSequenceRandomStart(t *testing.T) {
+	orig := randRead
+	randRead = func(b []byte) (int, error) {
+		for i := range b {
+			b[i] = 0
+		}
+		b[len(b)-1] = 0xFF // 序列低 8 位 = 255。
+		return len(b), nil
+	}
+	defer func() { randRead = orig }()
+	g, err := New(DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := g.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts, err := g.Parse(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parts.Sequence != 255 {
+		t.Fatalf("随机起点应保留注入值 255：%d", parts.Sequence)
+	}
+}
+
+// TestMaxWaitConfig 覆盖自定义等待上限。
+func TestMaxWaitConfig(t *testing.T) {
+	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
+	clock := &fixedClock{now: base}
+	cfg := DefaultConfig()
+	cfg.MaxWait = time.Millisecond
+	g, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Next(); err != nil {
+		t.Fatal(err)
+	}
+	clock.advance(100 * time.Millisecond)
+	if _, err := g.Next(); err != nil {
+		t.Fatal(err)
+	}
+	clock.advance(-20 * time.Millisecond)
+	if _, err := g.Next(); !errors.Is(err, ErrWaitTimeout) {
+		t.Fatalf("自定义 1ms 上限应超时，实际：%v", err)
 	}
 }

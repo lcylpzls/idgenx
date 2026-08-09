@@ -42,7 +42,7 @@ func DefaultConfig() Config
 
 约束：`1+TimestampBits+NodeBits+SequenceBits == 64`；
 `NodeID` 必须在 `[0, 2^NodeBits)`；`Epoch` 不得晚于当前时间；
-`MaxWait` 必须为正。
+`Backward` 必须合法；`MaxWait` 必须为正（零值填充默认）。
 
 ### 2.3 Parts
 

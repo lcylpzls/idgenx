@@ -2,6 +2,19 @@
 
 本项目遵循语义化版本（SemVer）。v1.0.0 之前允许破坏性变更。
 
+## [v0.2.0] - 2026-08-09
+
+### 新增
+
+- 可配置位布局与回拨策略：
+  - `Config.Backward`：`StrategyWait`（默认）/`StrategyReject`/
+    `StrategyLoose`；
+  - `Config.MaxWait` 自定义回拨等待上限（默认 5ms）；
+  - 序列随机起点（`crypto/rand`，首次生成保留随机序列，
+    防重启后可预测性）；随机源失败返回 `ErrRandomFailure`；
+- 修复：位偏移计算（nodeShift = 节点位 + 序列位）、
+  Loose 策略沿用上一时间戳不再倒退。
+
 ## [v0.1.0] - 2026-08-09
 
 ### 新增

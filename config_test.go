@@ -28,6 +28,8 @@ func TestNewErrors(t *testing.T) {
 		{"纪元晚于当前", Config{Epoch: now.Add(time.Hour), TimestampBits: 41, NodeBits: 10, SequenceBits: 12}, CodeInvalidConfig},
 		{"节点越界", Config{TimestampBits: 41, NodeBits: 10, SequenceBits: 12, NodeID: 1 << 10}, CodeNodeInvalid},
 		{"负节点", Config{TimestampBits: 41, NodeBits: 10, SequenceBits: 12, NodeID: -1}, CodeNodeInvalid},
+		{"非法回拨策略", Config{TimestampBits: 41, NodeBits: 10, SequenceBits: 12, Backward: BackwardStrategy(99)}, CodeInvalidConfig},
+		{"负等待上限", Config{TimestampBits: 41, NodeBits: 10, SequenceBits: 12, MaxWait: -time.Second}, CodeInvalidConfig},
 	}
 	for _, tc := range cases {
 		if _, err := New(tc.cfg); err == nil || !errx.Is(err, tc.want) {
