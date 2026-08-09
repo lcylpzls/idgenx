@@ -6,6 +6,7 @@
 | [api.md](api.md) | API 定版：完整公开签名、语义契约、示例 |
 | [research.md](research.md) | 领域调研：雪花变体、短 ID 方案与设计取舍 |
 | [roadmap.md](roadmap.md) | 版本路线：v0.1.0 起的迭代规划 |
+| [benchmark.md](benchmark.md) | 竞品对比与压测报告（bwmarrin/snowflake、sony/sonyflake） |
 
 ## 阅读顺序
 

@@ -2,6 +2,15 @@
 
 本项目遵循语义化版本（SemVer）。v1.0.0 之前允许破坏性变更。
 
+## [v0.7.0] - 2026-08-09
+
+### 调研
+
+- docs/benchmark.md：与 bwmarrin/snowflake、sony/sonyflake 对比压测；
+- 实测：idgenx 243ns/op（0 分配）与 bwmarrin 持平，
+  sonyflake 39µs/op（慢约 160 倍）；
+- 功能矩阵确认差异化价值（回拨策略/可配置布局/解析/短 ID）。
+
 ## [v0.6.0] - 2026-08-09
 
 ### 新增（自主打磨）
