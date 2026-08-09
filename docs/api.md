@@ -57,7 +57,7 @@ type Parts struct {
 ## 3. 雪花生成器
 
 ```go
-func New(cfg Config) (*Generator, error)
+func New(cfg Config, opts ...Option) (*Generator, error)
 func (g *Generator) Next() (int64, error)
 func (g *Generator) Parse(id int64) (Parts, error)
 ```
