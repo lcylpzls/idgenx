@@ -1,6 +1,6 @@
 module github.com/lcylpzls/idgenx
 
-go 1.26.5
+go 1.26.0
 
 require (
 	github.com/lcylpzls/errx v1.2.0
