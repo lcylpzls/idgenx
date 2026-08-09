@@ -9,7 +9,9 @@ import (
 
 // TestConcurrentStress 并发压力：8 goroutine × 5000 次生成，无重复。
 func TestConcurrentStress(t *testing.T) {
-	g, err := New(DefaultConfig())
+	cfg := DefaultConfig()
+	cfg.Backward = StrategyLoose // 容忍真实时钟偶发回拨。
+	g, err := New(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -27,7 +27,9 @@ func (c *fixedClock) advance(d time.Duration) {
 
 // TestNextMonotonic 覆盖严格递增与解析一致性。
 func TestNextMonotonic(t *testing.T) {
-	g, err := New(DefaultConfig(), WithClock(time.Now))
+	cfg := DefaultConfig()
+	cfg.Backward = StrategyLoose // 容忍真实时钟偶发回拨，聚焦单调性。
+	g, err := New(cfg, WithClock(time.Now))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +161,9 @@ func TestParseErrors(t *testing.T) {
 
 // TestConcurrent 覆盖并发生成无重复。
 func TestConcurrent(t *testing.T) {
-	g, err := New(DefaultConfig())
+	cfg := DefaultConfig()
+	cfg.Backward = StrategyLoose // 容忍真实时钟偶发回拨。
+	g, err := New(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
