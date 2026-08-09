@@ -3,8 +3,8 @@
 自研分布式 ID 生成库：雪花 ID（Snowflake）与短 ID，
 与 errx / logx 生态打通。
 
-> 当前状态：**v0.7.0 已发布**。竞品对比与压测完成
-> （见 [docs/benchmark.md](docs/benchmark.md)）。
+> 当前状态：**v0.8.0 已发布**。文档现代化与 API 核对完成，
+> 终审复核通过。
 
 性能参考（本机）：雪花 ~246ns/op（0 分配）、短 ID ~934ns/op。
 
@@ -27,22 +27,44 @@ idgenx **不依赖外部协调服务**，解决自用项目中每个业务都要
 
 ```
 idgenx/
+├── CHANGELOG.md          # 变更记录
+├── ERRORS.md             # 错误码清单
+├── LICENSE               # MIT 许可
 ├── docs/
 │   ├── README.md          # 文档索引
 │   ├── design.md          # 设计定版（位布局/回拨策略/并发模型/错误码）
 │   ├── api.md             # API 定版（完整签名与语义）
 │   ├── research.md        # 领域调研与设计取舍
-│   └── roadmap.md         # 版本路线
+│   ├── roadmap.md         # 版本路线
+│   └── benchmark.md       # 竞品对比与压测报告
+├── examples/basic/        # 基础示例
+├── shortid/               # 短 ID 子包
 └── README.md
 ```
 
-## 快速上手（规划草案）
+## 快速上手
 
 ```go
+import (
+	"github.com/lcylpzls/idgenx"
+	"github.com/lcylpzls/idgenx/shortid"
+)
+
+// 雪花 ID：默认布局 41/10/12，严格递增。
 g, err := idgenx.New(idgenx.DefaultConfig())
 id, err := g.Next()
-parts, err := g.Parse(id)
+parts, err := g.Parse(id) // 时间戳/节点/序列
+
+// 短 ID：8 位 base62 随机码。
+code, err := shortid.Generate(8)
+
+// 唯一短 ID：业务回调校验（查库/查缓存）。
+code, err = shortid.GenerateUnique(8, func(s string) (bool, error) {
+	return true, nil
+})
 ```
+
+配置（位布局/纪元/节点/回拨策略）见 [docs/api.md](docs/api.md)。
 
 ## License
 
