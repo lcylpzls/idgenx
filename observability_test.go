@@ -162,3 +162,24 @@ func TestConcurrentMetrics(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// TestEpochNearNow 覆盖纪元贴近当前时间的边界。
+func TestEpochNearNow(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Epoch = time.Now().Add(-time.Millisecond)
+	g, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := g.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts, err := g.Parse(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parts.Timestamp.IsZero() {
+		t.Fatal("时间戳解析不应为零")
+	}
+}
