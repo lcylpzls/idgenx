@@ -417,3 +417,48 @@ func TestSequenceOverflowTimestampLimit(t *testing.T) {
 		t.Fatal("等待未完成")
 	}
 }
+
+// TestBeforeEpoch 覆盖系统时钟早于纪元（负时间戳）的防护。
+func TestBeforeEpoch(t *testing.T) {
+	epoch := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
+	clock := &fixedClock{now: epoch.Add(-2 * time.Millisecond)}
+	// Wait：等待追平超时（真实时钟远在纪元后，注入时钟固定回拨区）。
+	cfg := DefaultConfig()
+	cfg.Epoch = epoch
+	g, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Next(); !errors.Is(err, ErrWaitTimeout) {
+		t.Fatalf("早于纪元应等待超时，实际：%v", err)
+	}
+	// Reject：直接拒绝。
+	cfg.Backward = StrategyReject
+	g2, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g2.Next(); !errors.Is(err, ErrClockBackward) {
+		t.Fatalf("早于纪元应拒绝，实际：%v", err)
+	}
+	// Loose：沿用 0 时间戳，ID 非负且时间戳为纪元。
+	cfg.Backward = StrategyLoose
+	g3, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := g3.Next()
+	if err != nil {
+		t.Fatalf("Loose 早于纪元应生成：%v", err)
+	}
+	if id < 0 {
+		t.Fatalf("ID 不应为负：%d", id)
+	}
+	parts, err := g3.Parse(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !parts.Timestamp.Equal(epoch) {
+		t.Fatalf("时间戳应为纪元：%v", parts.Timestamp)
+	}
+}

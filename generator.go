@@ -121,12 +121,6 @@ func (g *Generator) Next() (int64, error) {
 	if now > g.maxTimestamp {
 		return 0, ErrTimestampOverflow
 	}
-	if g.first {
-		g.first = false
-		g.lastTs = now
-		g.metricGenerated()
-		return (now << g.nodeShift) | (g.cfg.NodeID << g.sequenceBits) | g.sequence, nil
-	}
 	if now < g.lastTs {
 		switch g.cfg.Backward {
 		case StrategyReject:
@@ -147,6 +141,12 @@ func (g *Generator) Next() (int64, error) {
 				return 0, ErrTimestampOverflow
 			}
 		}
+	}
+	if g.first {
+		g.first = false
+		g.lastTs = now
+		g.metricGenerated()
+		return (now << g.nodeShift) | (g.cfg.NodeID << g.sequenceBits) | g.sequence, nil
 	}
 	if now == g.lastTs {
 		g.sequence++
