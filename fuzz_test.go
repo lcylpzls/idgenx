@@ -27,25 +27,22 @@ func FuzzConfig(f *testing.F) {
 	})
 }
 
-// FuzzNext 模糊测试生成路径：任意配置与时钟推进下不 panic、有限步返回。
+// FuzzNext 模糊测试生成路径：默认布局 + 随机回拨策略下
+// 不 panic、有限步返回（位布局边界由 FuzzConfig 与单元测试覆盖）。
 func FuzzNext(f *testing.F) {
-	f.Add(int64(0), uint8(41), uint8(10), uint8(12), uint8(0))
-	f.Add(int64(1), uint8(1), uint8(31), uint8(31), uint8(2))
-	f.Fuzz(func(t *testing.T, nodeID int64, tsBits, nodeBits, seqBits, strategy uint8) {
+	f.Add(uint8(0))
+	f.Add(uint8(2))
+	f.Fuzz(func(t *testing.T, strategy uint8) {
 		cfg := Config{
-			Epoch:         time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC),
-			TimestampBits: tsBits,
-			NodeBits:      nodeBits,
-			SequenceBits:  seqBits,
-			NodeID:        nodeID,
-			Backward:      BackwardStrategy(strategy % 3),
-			MaxWait:       100 * time.Microsecond,
+			Epoch:    time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			Backward: BackwardStrategy(strategy % 3),
+			MaxWait:  time.Millisecond,
 		}
 		g, err := New(cfg)
 		if err != nil {
 			return
 		}
-		for i := 0; i < 2; i++ {
+		for i := 0; i < 100; i++ {
 			_, _ = g.Next()
 		}
 	})
