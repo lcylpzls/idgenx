@@ -11,3 +11,4 @@
 | `idgenx_invalid_id` | ID 解析失败 | invalid_argument | 400 |
 | `idgenx_rand_failure` | 随机源失败 | unavailable | 503 |
 | `idgenx_collision` | 短 ID 碰撞重试耗尽 | conflict | 409 |
+| `idgenx_timestamp_overflow` | 时间戳超出位宽范围（生成不可用） | unavailable | 503 |

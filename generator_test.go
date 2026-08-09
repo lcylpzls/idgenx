@@ -325,3 +325,95 @@ func TestMaxWaitConfig(t *testing.T) {
 		t.Fatalf("自定义 1ms 上限应超时，实际：%v", err)
 	}
 }
+
+// TestTimestampOverflow 覆盖小位宽时间戳溢出防护。
+func TestTimestampOverflow(t *testing.T) {
+	epoch := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
+	clock := &fixedClock{now: epoch}
+	cfg := Config{
+		Epoch:         epoch,
+		TimestampBits: 1, // 时间戳仅 0-1ms。
+		NodeBits:      31,
+		SequenceBits:  31,
+	}
+	g, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 第 0ms：正常。
+	if _, err := g.Next(); err != nil {
+		t.Fatal(err)
+	}
+	// 推进到第 1ms（1 位时间戳内合法）。
+	clock.advance(time.Millisecond)
+	if _, err := g.Next(); err != nil {
+		t.Fatal(err)
+	}
+	// 推进到第 2ms：超出 1 位时间戳范围。
+	clock.advance(time.Millisecond)
+	if _, err := g.Next(); !errors.Is(err, ErrTimestampOverflow) {
+		t.Fatalf("应报时间戳溢出，实际：%v", err)
+	}
+	// 回拨到第 0ms 后恢复时大跳超限。
+	clock.advance(-2 * time.Millisecond)
+	done := make(chan error, 1)
+	go func() {
+		_, err := g.Next()
+		done <- err
+	}()
+	time.Sleep(time.Millisecond)
+	clock.advance(7 * time.Millisecond) // 恢复时大跳超过位宽。
+	select {
+	case err := <-done:
+		if !errors.Is(err, ErrTimestampOverflow) {
+			t.Fatalf("恢复后大跳应报溢出，实际：%v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("等待未完成")
+	}
+}
+
+// TestSequenceOverflowTimestampLimit 覆盖序列溢出等待时时间戳超限。
+func TestSequenceOverflowTimestampLimit(t *testing.T) {
+	epoch := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
+	clock := &fixedClock{now: epoch}
+	cfg := Config{
+		Epoch:         epoch,
+		TimestampBits: 1,
+		NodeBits:      61,
+		SequenceBits:  1, // maxSequence=1，快速触发溢出。
+	}
+	orig := randRead
+	randRead = func(b []byte) (int, error) {
+		for i := range b {
+			b[i] = 0
+		}
+		return len(b), nil
+	}
+	defer func() { randRead = orig }()
+	g, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Next(); err != nil { // seq 0。
+		t.Fatal(err)
+	}
+	if _, err := g.Next(); err != nil { // seq 1。
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		_, err := g.Next() // seq 溢出，等待下一毫秒。
+		done <- err
+	}()
+	time.Sleep(time.Millisecond)
+	clock.advance(2 * time.Millisecond) // 下一毫秒已超出 1 位时间戳范围。
+	select {
+	case err := <-done:
+		if !errors.Is(err, ErrTimestampOverflow) {
+			t.Fatalf("应报时间戳溢出，实际：%v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("等待未完成")
+	}
+}

@@ -66,6 +66,7 @@ type Generator struct {
 	nodeMask     int64
 	seqMask      int64
 	maxSequence  int64
+	maxTimestamp int64
 	lastTs       int64
 	sequence     int64
 	first        bool
@@ -101,6 +102,7 @@ func New(cfg Config, opts ...Option) (*Generator, error) {
 		nodeShift:    cfg.NodeBits + cfg.SequenceBits,
 		seqMask:      (int64(1) << cfg.SequenceBits) - 1,
 		maxSequence:  (int64(1) << cfg.SequenceBits) - 1,
+		maxTimestamp: (int64(1) << cfg.TimestampBits) - 1,
 		sequence:     seq,
 		first:        true,
 	}
@@ -116,6 +118,9 @@ func (g *Generator) Next() (int64, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	now := g.now().UnixMilli() - g.epochMS
+	if now > g.maxTimestamp {
+		return 0, ErrTimestampOverflow
+	}
 	if g.first {
 		g.first = false
 		g.lastTs = now
@@ -138,6 +143,9 @@ func (g *Generator) Next() (int64, error) {
 			}
 			g.logBackward(nil)
 			now = g.now().UnixMilli() - g.epochMS
+			if now > g.maxTimestamp {
+				return 0, ErrTimestampOverflow
+			}
 		}
 	}
 	if now == g.lastTs {
@@ -145,6 +153,9 @@ func (g *Generator) Next() (int64, error) {
 		if g.sequence > g.maxSequence {
 			for now <= g.lastTs {
 				now = g.now().UnixMilli() - g.epochMS
+				if now > g.maxTimestamp {
+					return 0, ErrTimestampOverflow
+				}
 			}
 			g.sequence = 0
 		}

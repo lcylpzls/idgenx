@@ -115,6 +115,7 @@ var (
 	ErrInvalidID      = errx.New(errx.KindInvalid, CodeInvalidID, "ID 解析失败")
 	ErrRandomFailure  = errx.New(errx.KindUnavailable, CodeRandomFailure, "随机源失败")
 	ErrCollision      = errx.New(errx.KindConflict, CodeCollision, "短 ID 碰撞重试耗尽")
+	ErrTimestampOverflow = errx.New(errx.KindUnavailable, CodeTimestampOverflow, "时间戳超出位宽范围")
 )
 ```
 

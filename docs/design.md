@@ -47,6 +47,9 @@ idgenx 是**分布式环境下的 ID 生成库**：雪花 ID 保证全局有序�
 - 同节点同毫秒：序列 +1，溢出后等待下一毫秒（忙等或短睡眠）；
 - 跨毫秒：序列归零（从随机起点开始，避免重启后从 0 引发可预测性）；
 - 同节点产出 ID 严格递增（时间或序列至少一个前进）；
+- 时间戳溢出防护：`now-epoch` 超过 `TimestampBits` 位宽范围时
+  返回 `ErrTimestampOverflow`（生成不可用），杜绝高位进位
+  破坏节点/序列位布局；
 - 并发模型：单互斥锁串行化生成（正确性优先，目标 ≥ 2M IDs/s）；
 - 时钟源可注入（测试与回拨演练）。
 
@@ -82,6 +85,7 @@ idgenx 是**分布式环境下的 ID 生成库**：雪花 ID 保证全局有序�
 | `idgenx_invalid_id` | ID 解析失败 | invalid_argument | 400 |
 | `idgenx_rand_failure` | 随机源失败 | unavailable | 503 |
 | `idgenx_collision` | 短 ID 碰撞重试耗尽 | conflict | 409 |
+| `idgenx_timestamp_overflow` | 时间戳超出位宽范围 | unavailable | 503 |
 
 预定义错误值（`ErrInvalidConfig` 等）支持 `errors.Is`；`errx.Is` 按码判断。
 
