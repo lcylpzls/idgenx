@@ -108,14 +108,14 @@ func IsValid(id string, alphabet string) bool                   // 长度与字�
 
 ```go
 var (
-	ErrInvalidConfig  = errx.New(errx.KindInvalid, CodeInvalidConfig, "配置非法")
-	ErrClockBackward  = errx.New(errx.KindUnavailable, CodeClockBackward, "检测到时钟回拨")
-	ErrWaitTimeout    = errx.New(errx.KindTimeout, CodeWaitTimeout, "等待时钟追平超时")
-	ErrNodeInvalid    = errx.New(errx.KindInvalid, CodeNodeInvalid, "节点 ID 越界")
-	ErrInvalidID      = errx.New(errx.KindInvalid, CodeInvalidID, "ID 解析失败")
-	ErrRandomFailure  = errx.New(errx.KindUnavailable, CodeRandomFailure, "随机源失败")
-	ErrCollision      = errx.New(errx.KindConflict, CodeCollision, "短 ID 碰撞重试耗尽")
-	ErrTimestampOverflow = errx.New(errx.KindUnavailable, CodeTimestampOverflow, "时间戳超出位宽范围")
+	ErrInvalidConfig  = errx.NewCode(CodeInvalidConfig, "配置非法")
+	ErrClockBackward  = errx.NewCode(CodeClockBackward, "检测到时钟回拨")
+	ErrWaitTimeout    = errx.NewCode(CodeWaitTimeout, "等待时钟追平超时")
+	ErrNodeInvalid    = errx.NewCode(CodeNodeInvalid, "节点 ID 越界")
+	ErrInvalidID      = errx.NewCode(CodeInvalidID, "ID 解析失败")
+	ErrRandomFailure  = errx.NewCode(CodeRandomFailure, "随机源失败")
+	ErrCollision      = errx.NewCode(CodeCollision, "短 ID 碰撞重试耗尽")
+	ErrTimestampOverflow = errx.NewCode(CodeTimestampOverflow, "时间戳超出位宽范围")
 )
 ```
 

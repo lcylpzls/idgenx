@@ -271,5 +271,5 @@ func validateConfig(cfg Config) error {
 
 // errInvalid 构造配置错误。
 func errInvalid(msg string) error {
-	return errx.New(errx.KindInvalid, CodeInvalidConfig, msg)
+	return errx.NewCode(CodeInvalidConfig, msg)
 }
