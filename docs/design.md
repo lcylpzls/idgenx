@@ -96,7 +96,9 @@ idgenx 是**分布式环境下的 ID 生成库**：雪花 ID 保证全局有序�
 | 生成失败 | `idgenx_node`、`error` |
 | 回拨告警 | `idgenx_node`、`idgenx_backward_ms`、`idgenx_strategy` |
 | 等待超时 | `idgenx_node`、`idgenx_max_wait` |
-| 碰撞重试 | `idgenx_length`、`idgenx_attempt` |
+
+> 短 ID 碰撞重试不内建日志（薄库原则），结果由调用方感知
+> （`ErrCollision` 或唯一性回调）。
 
 ### 8.2 Metrics（外部注入）
 

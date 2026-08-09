@@ -6,7 +6,18 @@ import (
 	"time"
 
 	"github.com/lcylpzls/errx"
+	"github.com/lcylpzls/logx"
 )
+
+// Metrics 外部注入的 ID 生成指标回调（全部可选，nil 跳过）。
+type Metrics struct {
+	// Generated 生成计数。
+	Generated func(node int64, delta int)
+	// Rejected 拒绝计数（回拨拒绝/等待超时）。
+	Rejected func(node int64, err error)
+	// WaitMS 回拨等待耗时（毫秒）。
+	WaitMS func(node int64, ms int64)
+}
 
 // Parts 雪花 ID 解析结果。
 type Parts struct {
@@ -30,6 +41,20 @@ func WithClock(now func() time.Time) Option {
 	}
 }
 
+// WithLogger 注入结构化日志器（nil 表示不记录）。
+func WithLogger(logger logx.Logger) Option {
+	return func(g *Generator) {
+		g.logger = logger
+	}
+}
+
+// WithMetrics 注入指标回调（全部可选）。
+func WithMetrics(m Metrics) Option {
+	return func(g *Generator) {
+		g.metrics = m
+	}
+}
+
 // Generator 雪花 ID 生成器（并发安全）。
 type Generator struct {
 	cfg          Config
@@ -44,6 +69,8 @@ type Generator struct {
 	lastTs       int64
 	sequence     int64
 	first        bool
+	logger       logx.Logger
+	metrics      Metrics
 }
 
 // randRead 可替换的随机源，便于测试注入失败场景。
@@ -92,18 +119,24 @@ func (g *Generator) Next() (int64, error) {
 	if g.first {
 		g.first = false
 		g.lastTs = now
+		g.metricGenerated()
 		return (now << g.nodeShift) | (g.cfg.NodeID << g.sequenceBits) | g.sequence, nil
 	}
 	if now < g.lastTs {
 		switch g.cfg.Backward {
 		case StrategyReject:
+			g.metricRejected(ErrClockBackward)
+			g.logBackward(ErrClockBackward)
 			return 0, ErrClockBackward
 		case StrategyLoose:
 			now = g.lastTs // 沿用上一时间戳，序列继续递增（容忍短暂回拨）。
 		default:
 			if err := g.waitBackward(now); err != nil {
+				g.metricRejected(err)
+				g.logWaitTimeout(err)
 				return 0, err
 			}
+			g.logBackward(nil)
 			now = g.now().UnixMilli() - g.epochMS
 		}
 	}
@@ -119,6 +152,7 @@ func (g *Generator) Next() (int64, error) {
 		g.sequence = 0
 	}
 	g.lastTs = now
+	g.metricGenerated()
 	return (now << g.nodeShift) | (g.cfg.NodeID << g.sequenceBits) | g.sequence, nil
 }
 
@@ -147,7 +181,55 @@ func (g *Generator) waitBackward(now int64) error {
 		time.Sleep(100 * time.Microsecond)
 		now = g.now().UnixMilli() - g.epochMS
 	}
+	if g.metrics.WaitMS != nil {
+		g.metrics.WaitMS(g.cfg.NodeID, time.Since(start).Milliseconds())
+	}
 	return nil
+}
+
+// metricGenerated 记录生成计数。
+func (g *Generator) metricGenerated() {
+	if g.metrics.Generated != nil {
+		g.metrics.Generated(g.cfg.NodeID, 1)
+	}
+}
+
+// metricRejected 记录拒绝计数。
+func (g *Generator) metricRejected(err error) {
+	if g.metrics.Rejected != nil {
+		g.metrics.Rejected(g.cfg.NodeID, err)
+	}
+}
+
+// logBackward 记录回拨告警或等待完成。
+func (g *Generator) logBackward(err error) {
+	if g.logger == nil {
+		return
+	}
+	if err != nil {
+		g.logger.Warn("idgenx：检测到时钟回拨并拒绝", logx.Fields(
+			logx.Int64("idgenx_node", g.cfg.NodeID),
+			logx.String("error", err.Error()),
+		))
+		return
+	}
+	g.logger.Warn("idgenx：检测到时钟回拨，等待后恢复", logx.Fields(
+		logx.Int64("idgenx_node", g.cfg.NodeID),
+		logx.Int64("idgenx_backward_ms", 0),
+		logx.String("idgenx_strategy", "wait"),
+	))
+}
+
+// logWaitTimeout 记录等待超时。
+func (g *Generator) logWaitTimeout(err error) {
+	if g.logger == nil {
+		return
+	}
+	g.logger.Error("idgenx：等待时钟追平超时", logx.Fields(
+		logx.Int64("idgenx_node", g.cfg.NodeID),
+		logx.String("idgenx_max_wait", g.cfg.MaxWait.String()),
+		logx.String("error", err.Error()),
+	))
 }
 
 // validateConfig 校验配置。
