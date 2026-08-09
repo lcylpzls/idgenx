@@ -1,0 +1,6 @@
+*.exe
+*.test
+coverage.out
+*.out
+.DS_Store
+*.log
