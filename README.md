@@ -3,8 +3,8 @@
 自研分布式 ID 生成库：雪花 ID（Snowflake）与短 ID，
 与 errx / logx 生态打通。
 
-> 当前状态：**v0.2.0 已发布**。位布局与回拨策略可用；
-> 短 ID 按 [docs/roadmap.md](docs/roadmap.md) 迭代中。
+> 当前状态：**v0.3.0 已发布**。雪花与短 ID 均可用；
+> 可观测与性能打磨按 [docs/roadmap.md](docs/roadmap.md) 迭代中。
 
 ## 定位
 

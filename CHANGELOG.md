@@ -2,6 +2,17 @@
 
 本项目遵循语义化版本（SemVer）。v1.0.0 之前允许破坏性变更。
 
+## [v0.3.0] - 2026-08-09
+
+### 新增
+
+- shortid 子包：
+  - `Generate`/`GenerateWithAlphabet`/`GenerateUnique`/`IsValid`；
+  - `AlphabetBase62` 与 `AlphabetNoConfusable`（排除易混字符）；
+  - 拒绝采样消除模偏差（均匀分布）；
+  - `GenerateUnique` 碰撞重试（上限 8 次，回调可透传错误）；
+  - fuzz 目标 `FuzzShortID`。
+
 ## [v0.2.0] - 2026-08-09
 
 ### 新增

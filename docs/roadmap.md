@@ -16,7 +16,7 @@
 - 时钟回拨三策略（Wait/Reject/Loose）与 `MaxWait`；
 - 序列随机起点；节点 ID 校验。
 
-## v0.3.0 — 短 ID
+## v0.3.0 — 短 ID（已发布）
 
 - `shortid` 子包：`Generate`/`GenerateWithAlphabet`/`IsValid`；
 - 易混字符字母表、长度校验、碰撞重试回调；
