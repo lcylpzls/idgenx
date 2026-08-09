@@ -151,11 +151,17 @@ func (g *Generator) Next() (int64, error) {
 	if now == g.lastTs {
 		g.sequence++
 		if g.sequence > g.maxSequence {
+			waitStart := time.Now()
 			for now <= g.lastTs {
 				now = g.now().UnixMilli() - g.epochMS
 				if now > g.maxTimestamp {
 					return 0, ErrTimestampOverflow
 				}
+				if time.Since(waitStart) > g.cfg.MaxWait {
+					g.sequence = 0
+					return 0, ErrWaitTimeout
+				}
+				time.Sleep(100 * time.Microsecond)
 			}
 			g.sequence = 0
 		}

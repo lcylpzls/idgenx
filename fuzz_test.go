@@ -39,13 +39,13 @@ func FuzzNext(f *testing.F) {
 			SequenceBits:  seqBits,
 			NodeID:        nodeID,
 			Backward:      BackwardStrategy(strategy % 3),
-			MaxWait:       time.Millisecond,
+			MaxWait:       100 * time.Microsecond,
 		}
 		g, err := New(cfg)
 		if err != nil {
 			return
 		}
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 2; i++ {
 			_, _ = g.Next()
 		}
 	})

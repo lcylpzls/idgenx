@@ -462,3 +462,37 @@ func TestBeforeEpoch(t *testing.T) {
 		t.Fatalf("时间戳应为纪元：%v", parts.Timestamp)
 	}
 }
+
+// TestSequenceOverflowWaitTimeout 覆盖溢出等待超时（时钟停滞）。
+func TestSequenceOverflowWaitTimeout(t *testing.T) {
+	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
+	clock := &fixedClock{now: base}
+	cfg := Config{
+		Epoch:         base,
+		TimestampBits: 41,
+		NodeBits:      21,
+		SequenceBits:  1, // maxSequence=1，快速溢出。
+		MaxWait:       time.Millisecond,
+	}
+	orig := randRead
+	randRead = func(b []byte) (int, error) {
+		for i := range b {
+			b[i] = 0
+		}
+		return len(b), nil
+	}
+	defer func() { randRead = orig }()
+	g, err := New(cfg, WithClock(clock.get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Next(); err != nil { // seq 0。
+		t.Fatal(err)
+	}
+	if _, err := g.Next(); err != nil { // seq 1。
+		t.Fatal(err)
+	}
+	if _, err := g.Next(); !errors.Is(err, ErrWaitTimeout) {
+		t.Fatalf("时钟停滞时溢出等待应超时，实际：%v", err)
+	}
+}
