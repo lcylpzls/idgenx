@@ -2,6 +2,7 @@ package shortid
 
 import (
 	"errors"
+	testx "github.com/lcylpzls/testx"
 	"strings"
 	"testing"
 
@@ -11,9 +12,8 @@ import (
 // TestGenerate 覆盖默认字母表生成。
 func TestGenerate(t *testing.T) {
 	code, err := Generate(8)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if len(code) != 8 {
 		t.Fatalf("长度不符：%q", code)
 	}
@@ -30,9 +30,8 @@ func TestGenerate(t *testing.T) {
 // TestGenerateWithAlphabet 覆盖自定义字母表与参数校验。
 func TestGenerateWithAlphabet(t *testing.T) {
 	code, err := GenerateWithAlphabet(AlphabetNoConfusable, 10)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if len(code) != 10 {
 		t.Fatalf("长度不符：%q", code)
 	}
@@ -76,9 +75,8 @@ func TestGenerateDeterministic(t *testing.T) {
 	}
 	defer func() { randRead = orig }()
 	code, err := Generate(6)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	// 注入值 0-9 均小于 max（248），首 6 个字符为字母表[0..5]。
 	if code != AlphabetBase62[:6] {
 		t.Fatalf("确定性输出不符：%q", code)
@@ -98,9 +96,8 @@ func TestGenerateUnique(t *testing.T) {
 		}
 		return true, nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if calls != 2 || code == "" {
 		t.Fatalf("应在第二次重试成功：calls=%d code=%q", calls, code)
 	}

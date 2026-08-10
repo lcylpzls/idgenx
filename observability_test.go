@@ -2,6 +2,7 @@ package idgenx
 
 import (
 	"errors"
+	testx "github.com/lcylpzls/testx"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -31,9 +32,8 @@ func TestObservability(t *testing.T) {
 	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
 	clock := &fixedClock{now: base}
 	g, err := New(DefaultConfig(), WithClock(clock.get), WithLogger(testLogger()), WithMetrics(m))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); err != nil {
 		t.Fatal(err)
 	}
@@ -63,9 +63,8 @@ func TestObservability(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Backward = StrategyReject
 	g2, err := New(cfg, WithClock(clock.get), WithLogger(testLogger()), WithMetrics(m))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g2.Next(); err != nil {
 		t.Fatal(err)
 	}
@@ -84,9 +83,8 @@ func TestObservability(t *testing.T) {
 	cfg2 := DefaultConfig()
 	cfg2.MaxWait = time.Millisecond
 	g3, err := New(cfg2, WithClock(clock.get), WithLogger(testLogger()), WithMetrics(m))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g3.Next(); err != nil {
 		t.Fatal(err)
 	}
@@ -106,9 +104,8 @@ func TestObservability(t *testing.T) {
 // TestLoggerNil 覆盖无日志器路径。
 func TestLoggerNil(t *testing.T) {
 	g, err := New(DefaultConfig())
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); err != nil {
 		t.Fatal(err)
 	}
@@ -125,20 +122,16 @@ func TestLayoutBoundaries(t *testing.T) {
 	for _, cfg := range cases {
 		cfg.Epoch = epoch
 		g, err := New(cfg, WithClock(clock.get))
-		if err != nil {
-			t.Fatalf("极端布局应可构造：%+v err=%v", cfg, err)
-		}
+		testx.RequireNoError(t, err)
+
 		id, err := g.Next()
-		if err != nil {
-			t.Fatal(err)
-		}
+		testx.RequireNoError(t, err)
+
 		parts, err := g.Parse(id)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if parts.NodeID != cfg.NodeID {
-			t.Fatalf("节点解析不符：%+v", parts)
-		}
+		testx.RequireNoError(t, err)
+
+		testx.RequireEqual(t, parts.NodeID, cfg.NodeID)
+
 	}
 }
 
@@ -148,9 +141,8 @@ func TestConcurrentMetrics(t *testing.T) {
 	g, err := New(DefaultConfig(), WithMetrics(Metrics{
 		Generated: func(int64, int) {},
 	}))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	for i := 0; i < 8; i++ {
 		wg.Add(1)
 		go func() {
@@ -168,17 +160,14 @@ func TestEpochNearNow(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Epoch = time.Now().Add(-time.Millisecond)
 	g, err := New(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	id, err := g.Next()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	parts, err := g.Parse(id)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if parts.Timestamp.IsZero() {
 		t.Fatal("时间戳解析不应为零")
 	}

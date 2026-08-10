@@ -1,6 +1,7 @@
 package idgenx
 
 import (
+	testx "github.com/lcylpzls/testx"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -12,9 +13,8 @@ func TestConcurrentStress(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Backward = StrategyLoose // 容忍真实时钟偶发回拨。
 	g, err := New(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	const goroutines = 8
 	const perGoroutine = 5000
 	var collisions atomic.Int64
@@ -48,9 +48,8 @@ func TestBackwardUnderLoad(t *testing.T) {
 	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
 	clock := &fixedClock{now: base}
 	g, err := New(DefaultConfig(), WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)

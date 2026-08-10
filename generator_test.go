@@ -2,6 +2,7 @@ package idgenx
 
 import (
 	"errors"
+	testx "github.com/lcylpzls/testx"
 	"sync"
 	"testing"
 	"time"
@@ -30,23 +31,20 @@ func TestNextMonotonic(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Backward = StrategyLoose // 容忍真实时钟偶发回拨，聚焦单调性。
 	g, err := New(cfg, WithClock(time.Now))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	var prev int64
 	for i := 0; i < 10000; i++ {
 		id, err := g.Next()
-		if err != nil {
-			t.Fatal(err)
-		}
+		testx.RequireNoError(t, err)
+
 		if id <= prev {
 			t.Fatalf("ID 应严格递增：%d <= %d", id, prev)
 		}
 		prev = id
 		parts, err := g.Parse(id)
-		if err != nil {
-			t.Fatal(err)
-		}
+		testx.RequireNoError(t, err)
+
 		if parts.NodeID != 0 || parts.Timestamp.IsZero() {
 			t.Fatalf("解析不符：%+v", parts)
 		}
@@ -66,9 +64,8 @@ func TestNextSequenceOverflow(t *testing.T) {
 	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
 	clock := &fixedClock{now: base}
 	g, err := New(DefaultConfig(), WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	// 同毫秒生成 maxSequence+1 个（溢出点）。
 	for i := 0; i <= int(g.maxSequence); i++ {
 		if _, err := g.Next(); err != nil {
@@ -77,13 +74,11 @@ func TestNextSequenceOverflow(t *testing.T) {
 	}
 	clock.advance(time.Millisecond)
 	id, err := g.Next()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	parts, err := g.Parse(id)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if parts.Sequence != 0 {
 		t.Fatalf("溢出后序列应归零：%d", parts.Sequence)
 	}
@@ -97,9 +92,8 @@ func TestBackwardWait(t *testing.T) {
 	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
 	clock := &fixedClock{now: base}
 	g, err := New(DefaultConfig(), WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); err != nil {
 		t.Fatal(err)
 	}
@@ -118,9 +112,8 @@ func TestBackwardWait(t *testing.T) {
 	clock.advance(time.Millisecond)
 	select {
 	case err := <-done:
-		if err != nil {
-			t.Fatalf("小回拨应等待成功：%v", err)
-		}
+		testx.RequireNoError(t, err)
+
 	case <-time.After(2 * time.Second):
 		t.Fatal("回拨等待未完成")
 	}
@@ -131,9 +124,8 @@ func TestBackwardTimeout(t *testing.T) {
 	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
 	clock := &fixedClock{now: base}
 	g, err := New(DefaultConfig(), WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); err != nil {
 		t.Fatal(err)
 	}
@@ -151,9 +143,8 @@ func TestBackwardTimeout(t *testing.T) {
 // TestParseErrors 覆盖解析错误分支。
 func TestParseErrors(t *testing.T) {
 	g, err := New(DefaultConfig())
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Parse(-1); !errors.Is(err, ErrInvalidID) {
 		t.Fatalf("负 ID 应报错，实际：%v", err)
 	}
@@ -164,9 +155,8 @@ func TestConcurrent(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Backward = StrategyLoose // 容忍真实时钟偶发回拨。
 	g, err := New(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	const goroutines = 8
 	const perGoroutine = 2000
 	ids := make(chan int64, goroutines*perGoroutine)
@@ -202,9 +192,8 @@ func TestConcurrent(t *testing.T) {
 // TestWithClockNil 覆盖空时钟注入保持默认。
 func TestWithClockNil(t *testing.T) {
 	g, err := New(DefaultConfig(), WithClock(nil))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if g.now == nil {
 		t.Fatal("默认时间源不应为空")
 	}
@@ -217,9 +206,8 @@ func TestBackwardReject(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Backward = StrategyReject
 	g, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); err != nil {
 		t.Fatal(err)
 	}
@@ -240,24 +228,20 @@ func TestBackwardLoose(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Backward = StrategyLoose
 	g, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	id1, err := g.Next()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	clock.advance(time.Second)
 	id2, err := g.Next()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	// 回拨 1ms。
 	clock.advance(-time.Millisecond)
 	id3, err := g.Next()
-	if err != nil {
-		t.Fatalf("Loose 策略不应报错：%v", err)
-	}
+	testx.RequireNoError(t, err)
+
 	if id3 <= id2 {
 		t.Fatalf("Loose 回拨后 ID 应继续递增：%d <= %d", id3, id2)
 	}
@@ -291,17 +275,14 @@ func TestSequenceRandomStart(t *testing.T) {
 	}
 	defer func() { randRead = orig }()
 	g, err := New(DefaultConfig())
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	id, err := g.Next()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	parts, err := g.Parse(id)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if parts.Sequence != 255 {
 		t.Fatalf("随机起点应保留注入值 255：%d", parts.Sequence)
 	}
@@ -314,9 +295,8 @@ func TestMaxWaitConfig(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.MaxWait = time.Millisecond
 	g, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); err != nil {
 		t.Fatal(err)
 	}
@@ -341,9 +321,8 @@ func TestTimestampOverflow(t *testing.T) {
 		SequenceBits:  31,
 	}
 	g, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	// 第 0ms：正常。
 	if _, err := g.Next(); err != nil {
 		t.Fatal(err)
@@ -369,9 +348,8 @@ func TestTimestampOverflow(t *testing.T) {
 	clock.advance(7 * time.Millisecond) // 恢复时大跳超过位宽。
 	select {
 	case err := <-done:
-		if !errors.Is(err, ErrTimestampOverflow) {
-			t.Fatalf("恢复后大跳应报溢出，实际：%v", err)
-		}
+		testx.RequireErrorIs(t, err, ErrTimestampOverflow)
+
 	case <-time.After(2 * time.Second):
 		t.Fatal("等待未完成")
 	}
@@ -396,9 +374,8 @@ func TestSequenceOverflowTimestampLimit(t *testing.T) {
 	}
 	defer func() { randRead = orig }()
 	g, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); err != nil { // seq 0。
 		t.Fatal(err)
 	}
@@ -414,9 +391,8 @@ func TestSequenceOverflowTimestampLimit(t *testing.T) {
 	clock.advance(2 * time.Millisecond) // 下一毫秒已超出 1 位时间戳范围。
 	select {
 	case err := <-done:
-		if !errors.Is(err, ErrTimestampOverflow) {
-			t.Fatalf("应报时间戳溢出，实际：%v", err)
-		}
+		testx.RequireErrorIs(t, err, ErrTimestampOverflow)
+
 	case <-time.After(2 * time.Second):
 		t.Fatal("等待未完成")
 	}
@@ -430,38 +406,33 @@ func TestBeforeEpoch(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Epoch = epoch
 	g, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); !errors.Is(err, ErrWaitTimeout) {
 		t.Fatalf("早于纪元应等待超时，实际：%v", err)
 	}
 	// Reject：直接拒绝。
 	cfg.Backward = StrategyReject
 	g2, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g2.Next(); !errors.Is(err, ErrClockBackward) {
 		t.Fatalf("早于纪元应拒绝，实际：%v", err)
 	}
 	// Loose：沿用 0 时间戳，ID 非负且时间戳为纪元。
 	cfg.Backward = StrategyLoose
 	g3, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	id, err := g3.Next()
-	if err != nil {
-		t.Fatalf("Loose 早于纪元应生成：%v", err)
-	}
+	testx.RequireNoError(t, err)
+
 	if id < 0 {
 		t.Fatalf("ID 不应为负：%d", id)
 	}
 	parts, err := g3.Parse(id)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if !parts.Timestamp.Equal(epoch) {
 		t.Fatalf("时间戳应为纪元：%v", parts.Timestamp)
 	}
@@ -487,9 +458,8 @@ func TestSequenceOverflowWaitTimeout(t *testing.T) {
 	}
 	defer func() { randRead = orig }()
 	g, err := New(cfg, WithClock(clock.get))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if _, err := g.Next(); err != nil { // seq 0。
 		t.Fatal(err)
 	}

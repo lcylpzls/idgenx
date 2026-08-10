@@ -1,6 +1,7 @@
 package idgenx
 
 import (
+	testx "github.com/lcylpzls/testx"
 	"testing"
 	"time"
 
@@ -41,20 +42,17 @@ func TestNewErrors(t *testing.T) {
 // TestNewDefaults 覆盖零值字段填充默认。
 func TestNewDefaults(t *testing.T) {
 	g, err := New(Config{NodeID: 3})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if g.cfg.TimestampBits != 41 || g.cfg.NodeBits != 10 || g.cfg.SequenceBits != 12 {
 		t.Fatalf("默认填充失败：%+v", g.cfg)
 	}
 	id, err := g.Next()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	parts, err := g.Parse(id)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if parts.NodeID != 3 {
 		t.Fatalf("节点不符：%d", parts.NodeID)
 	}

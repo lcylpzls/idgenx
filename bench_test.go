@@ -1,6 +1,7 @@
 package idgenx_test
 
 import (
+	testx "github.com/lcylpzls/testx"
 	"sync"
 	"testing"
 
@@ -11,9 +12,8 @@ import (
 // BenchmarkSnowflakeNext 测量雪花 ID 串行生成吞吐。
 func BenchmarkSnowflakeNext(b *testing.B) {
 	g, err := idgenx.New(idgenx.DefaultConfig())
-	if err != nil {
-		b.Fatal(err)
-	}
+	testx.RequireNoError(b, err)
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -24,9 +24,8 @@ func BenchmarkSnowflakeNext(b *testing.B) {
 // BenchmarkSnowflakeParallel 测量并发生成吞吐。
 func BenchmarkSnowflakeParallel(b *testing.B) {
 	g, err := idgenx.New(idgenx.DefaultConfig())
-	if err != nil {
-		b.Fatal(err)
-	}
+	testx.RequireNoError(b, err)
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -48,18 +47,16 @@ func BenchmarkShortIDGenerate(b *testing.B) {
 // BenchmarkSnowflakeParallelVerify 并行生成并校验无重复（正确性基准）。
 func BenchmarkSnowflakeParallelVerify(b *testing.B) {
 	g, err := idgenx.New(idgenx.DefaultConfig())
-	if err != nil {
-		b.Fatal(err)
-	}
+	testx.RequireNoError(b, err)
+
 	seen := make(map[int64]struct{}, 1<<16)
 	var mu sync.Mutex
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			id, err := g.Next()
-			if err != nil {
-				b.Fatal(err)
-			}
+			testx.RequireNoError(b, err)
+
 			mu.Lock()
 			if _, ok := seen[id]; ok {
 				b.Fatal("重复 ID")
