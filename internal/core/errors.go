@@ -1,4 +1,4 @@
-package idgenx
+package core
 
 import "github.com/lcylpzls/errx"
 

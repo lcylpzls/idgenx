@@ -1,4 +1,4 @@
-package idgenx_test
+package core_test
 
 import (
 	testx "github.com/lcylpzls/testx"
