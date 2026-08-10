@@ -2,8 +2,11 @@
 package shortid
 
 import (
+	"strconv"
+
 	"github.com/lcylpzls/cryptox"
 	"github.com/lcylpzls/idgenx"
+	"github.com/lcylpzls/validx"
 )
 
 const (
@@ -75,37 +78,53 @@ func GenerateUnique(length int, isUnique func(string) (bool, error)) (string, er
 	return "", idgenx.ErrCollision
 }
 
-// IsValid 校验短 ID 长度与字符集。
-func IsValid(id, alphabet string) bool {
-	if id == "" || alphabet == "" || len(id) < MinLength || len(id) > MaxLength {
-		return false
-	}
-	allowed := make(map[rune]struct{}, len(alphabet))
-	for _, r := range alphabet {
-		allowed[r] = struct{}{}
-	}
-	for _, r := range id {
-		if _, ok := allowed[r]; !ok {
-			return false
-		}
-	}
-	return true
-}
-
-// validateParams 校验字母表与长度。
-func validateParams(alphabet string, length int) error {
-	if length < MinLength || length > MaxLength {
-		return idgenx.ErrInvalidConfig
-	}
-	if len(alphabet) < minAlphabetLength {
-		return idgenx.ErrInvalidConfig
-	}
-	seen := make(map[rune]struct{}, len(alphabet))
-	for _, r := range alphabet {
-		if _, ok := seen[r]; ok {
+// init 注册短 ID 规则到 validx 全局规则表，错误码保持 idgenx 语义。
+func init() {
+	_ = validx.RegisterRule("idgenx_shortid_params", func(value any, param, path string) error {
+		// 内部调用保证 value 为字母表、param 为长度。
+		alphabet := value.(string)
+		length, _ := strconv.Atoi(param)
+		if length < MinLength || length > MaxLength {
 			return idgenx.ErrInvalidConfig
 		}
-		seen[r] = struct{}{}
-	}
-	return nil
+		if len(alphabet) < minAlphabetLength {
+			return idgenx.ErrInvalidConfig
+		}
+		seen := make(map[rune]struct{}, len(alphabet))
+		for _, r := range alphabet {
+			if _, ok := seen[r]; ok {
+				return idgenx.ErrInvalidConfig
+			}
+			seen[r] = struct{}{}
+		}
+		return nil
+	})
+	_ = validx.RegisterRule("idgenx_shortid_valid", func(value any, param, path string) error {
+		// 内部调用保证 value 为 ID、param 为字母表。
+		id := value.(string)
+		alphabet := param
+		if id == "" || alphabet == "" || len(id) < MinLength || len(id) > MaxLength {
+			return idgenx.ErrInvalidConfig
+		}
+		allowed := make(map[rune]struct{}, len(alphabet))
+		for _, r := range alphabet {
+			allowed[r] = struct{}{}
+		}
+		for _, r := range id {
+			if _, ok := allowed[r]; !ok {
+				return idgenx.ErrInvalidConfig
+			}
+		}
+		return nil
+	})
+}
+
+// IsValid 校验短 ID 长度与字符集（统一走 validx 规则）。
+func IsValid(id, alphabet string) bool {
+	return validx.ValidateField(id, "idgenx_shortid_valid="+alphabet) == nil
+}
+
+// validateParams 校验字母表与长度（统一走 validx 规则）。
+func validateParams(alphabet string, length int) error {
+	return validx.ValidateField(alphabet, "idgenx_shortid_params="+strconv.Itoa(length))
 }

@@ -2,6 +2,21 @@
 
 本项目遵循语义化版本（SemVer）。v1.0.0 之前允许破坏性变更。
 
+## [v1.4.0] - 2026-08-10
+
+### 变更
+
+- 校验能力统一迁移至家族 `validx`：
+  - 雪花配置校验注册为 `idgenx_config` 全局规则；
+  - shortid 参数校验注册为 `idgenx_shortid_params`；
+  - shortid 字符集判定注册为 `idgenx_shortid_valid`；
+  - errx 错误码保持 idgenx 语义，行为不变。
+
+### 质量
+
+- 根包与 shortid 子包语句覆盖率保持 100%；race / vet / staticcheck /
+  govulncheck 全绿。
+
 ## [v1.3.0] - 2026-08-10
 
 ### 新增

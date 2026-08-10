@@ -7,6 +7,7 @@ import (
 	"github.com/lcylpzls/cryptox"
 	"github.com/lcylpzls/errx"
 	"github.com/lcylpzls/logx"
+	"github.com/lcylpzls/validx"
 )
 
 // Metrics 外部注入的 ID 生成指标回调（全部可选，nil 跳过）。
@@ -249,24 +250,33 @@ func (g *Generator) logWaitTimeout(err error) {
 	))
 }
 
-// validateConfig 校验配置。
+// init 注册配置校验规则到 validx 全局规则表，错误码保持 idgenx 语义。
+func init() {
+	_ = validx.RegisterRule("idgenx_config", func(value any, param, path string) error {
+		// 内部调用保证 value 为 Config。
+		cfg := value.(Config)
+		if 1+int(cfg.TimestampBits)+int(cfg.NodeBits)+int(cfg.SequenceBits) != 64 {
+			return errInvalid("位布局总和必须为 63（符号位 1 位）")
+		}
+		if cfg.Epoch.IsZero() || cfg.Epoch.After(time.Now()) {
+			return errInvalid("纪元必须早于当前时间")
+		}
+		if cfg.NodeID < 0 || cfg.NodeID > (int64(1)<<cfg.NodeBits)-1 {
+			return ErrNodeInvalid
+		}
+		if cfg.Backward != StrategyWait && cfg.Backward != StrategyReject && cfg.Backward != StrategyLoose {
+			return errInvalid("非法回拨策略")
+		}
+		if cfg.MaxWait <= 0 {
+			return errInvalid("回拨等待上限必须为正")
+		}
+		return nil
+	})
+}
+
+// validateConfig 校验配置（统一走 validx 规则）。
 func validateConfig(cfg Config) error {
-	if 1+int(cfg.TimestampBits)+int(cfg.NodeBits)+int(cfg.SequenceBits) != 64 {
-		return errInvalid("位布局总和必须为 63（符号位 1 位）")
-	}
-	if cfg.Epoch.IsZero() || cfg.Epoch.After(time.Now()) {
-		return errInvalid("纪元必须早于当前时间")
-	}
-	if cfg.NodeID < 0 || cfg.NodeID > (int64(1)<<cfg.NodeBits)-1 {
-		return ErrNodeInvalid
-	}
-	if cfg.Backward != StrategyWait && cfg.Backward != StrategyReject && cfg.Backward != StrategyLoose {
-		return errInvalid("非法回拨策略")
-	}
-	if cfg.MaxWait <= 0 {
-		return errInvalid("回拨等待上限必须为正")
-	}
-	return nil
+	return validx.ValidateField(cfg, "idgenx_config")
 }
 
 // errInvalid 构造配置错误。
