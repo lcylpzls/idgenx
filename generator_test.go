@@ -54,11 +54,12 @@ func TestNextMonotonic(t *testing.T) {
 // TestNextSequenceOverflow 覆盖同毫秒序列溢出等待。
 func TestNextSequenceOverflow(t *testing.T) {
 	orig := randRead
-	randRead = func(b []byte) (int, error) {
+	randRead = func(n int) ([]byte, error) {
+		b := make([]byte, n)
 		for i := range b {
 			b[i] = 0
 		}
-		return len(b), nil
+		return b, nil
 	}
 	defer func() { randRead = orig }()
 	base := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
@@ -256,7 +257,7 @@ func TestBackwardLoose(t *testing.T) {
 // TestNewRandFailure 覆盖随机源失败。
 func TestNewRandFailure(t *testing.T) {
 	orig := randRead
-	randRead = func(b []byte) (int, error) { return 0, errors.New("随机源故障") }
+	randRead = func(n int) ([]byte, error) { return nil, errors.New("随机源故障") }
 	defer func() { randRead = orig }()
 	if _, err := New(DefaultConfig()); !errors.Is(err, ErrRandomFailure) {
 		t.Fatalf("随机源失败应报错，实际：%v", err)
@@ -266,12 +267,13 @@ func TestNewRandFailure(t *testing.T) {
 // TestSequenceRandomStart 覆盖序列随机起点。
 func TestSequenceRandomStart(t *testing.T) {
 	orig := randRead
-	randRead = func(b []byte) (int, error) {
+	randRead = func(n int) ([]byte, error) {
+		b := make([]byte, n)
 		for i := range b {
 			b[i] = 0
 		}
 		b[len(b)-1] = 0xFF // 序列低 8 位 = 255。
-		return len(b), nil
+		return b, nil
 	}
 	defer func() { randRead = orig }()
 	g, err := New(DefaultConfig())
@@ -366,11 +368,12 @@ func TestSequenceOverflowTimestampLimit(t *testing.T) {
 		SequenceBits:  1, // maxSequence=1，快速触发溢出。
 	}
 	orig := randRead
-	randRead = func(b []byte) (int, error) {
+	randRead = func(n int) ([]byte, error) {
+		b := make([]byte, n)
 		for i := range b {
 			b[i] = 0
 		}
-		return len(b), nil
+		return b, nil
 	}
 	defer func() { randRead = orig }()
 	g, err := New(cfg, WithClock(clock.get))
@@ -450,11 +453,12 @@ func TestSequenceOverflowWaitTimeout(t *testing.T) {
 		MaxWait:       time.Millisecond,
 	}
 	orig := randRead
-	randRead = func(b []byte) (int, error) {
+	randRead = func(n int) ([]byte, error) {
+		b := make([]byte, n)
 		for i := range b {
 			b[i] = 0
 		}
-		return len(b), nil
+		return b, nil
 	}
 	defer func() { randRead = orig }()
 	g, err := New(cfg, WithClock(clock.get))

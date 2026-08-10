@@ -1,10 +1,10 @@
 package idgenx
 
 import (
-	"crypto/rand"
 	"sync"
 	"time"
 
+	"github.com/lcylpzls/cryptox"
 	"github.com/lcylpzls/errx"
 	"github.com/lcylpzls/logx"
 )
@@ -75,7 +75,7 @@ type Generator struct {
 }
 
 // randRead 可替换的随机源，便于测试注入失败场景。
-var randRead = rand.Read
+var randRead = cryptox.RandomBytes
 
 // New 构造雪花 ID 生成器。
 func New(cfg Config, opts ...Option) (*Generator, error) {
@@ -84,8 +84,8 @@ func New(cfg Config, opts ...Option) (*Generator, error) {
 		return nil, err
 	}
 	var seq int64
-	b := make([]byte, 8)
-	if _, err := randRead(b); err != nil {
+	b, err := randRead(8)
+	if err != nil {
 		return nil, ErrRandomFailure
 	}
 	seq = int64(b[0])<<56 | int64(b[1])<<48 | int64(b[2])<<40 | int64(b[3])<<32 |

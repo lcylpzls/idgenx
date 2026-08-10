@@ -57,7 +57,7 @@ func TestGenerateWithAlphabet(t *testing.T) {
 // TestGenerateRandFailure 覆盖随机源失败。
 func TestGenerateRandFailure(t *testing.T) {
 	orig := randRead
-	randRead = func(b []byte) (int, error) { return 0, errors.New("随机源故障") }
+	randRead = func(n int) ([]byte, error) { return nil, errors.New("随机源故障") }
 	defer func() { randRead = orig }()
 	if _, err := Generate(8); !errors.Is(err, idgenx.ErrRandomFailure) {
 		t.Fatalf("随机源失败应报错，实际：%v", err)
@@ -67,11 +67,12 @@ func TestGenerateRandFailure(t *testing.T) {
 // TestGenerateDeterministic 覆盖拒绝采样确定性（注入固定随机值）。
 func TestGenerateDeterministic(t *testing.T) {
 	orig := randRead
-	randRead = func(b []byte) (int, error) {
+	randRead = func(n int) ([]byte, error) {
+		b := make([]byte, n)
 		for i := range b {
 			b[i] = byte(i % 10)
 		}
-		return len(b), nil
+		return b, nil
 	}
 	defer func() { randRead = orig }()
 	code, err := Generate(6)
@@ -113,7 +114,7 @@ func TestGenerateUnique(t *testing.T) {
 	}
 	// 生成失败透传。
 	orig := randRead
-	randRead = func(b []byte) (int, error) { return 0, errors.New("随机源故障") }
+	randRead = func(n int) ([]byte, error) { return nil, errors.New("随机源故障") }
 	defer func() { randRead = orig }()
 	if _, err := GenerateUnique(8, func(string) (bool, error) { return true, nil }); !errors.Is(err, idgenx.ErrRandomFailure) {
 		t.Fatalf("生成失败应透传，实际：%v", err)

@@ -2,6 +2,18 @@
 
 本项目遵循语义化版本（SemVer）。v1.0.0 之前允许破坏性变更。
 
+## [v1.2.0] - 2026-08-10
+
+### 变更
+
+- 加密能力统一迁移至 `cryptox`：雪花 ID 初始序列与短 ID 生成的安全随机数
+  改用 `cryptox.RandomBytes`，去除对 `crypto/rand` 的直接引用。
+
+### 质量
+
+- 根包与 shortid 子包语句覆盖率保持 100%；race / vet / staticcheck /
+  govulncheck 全绿。
+
 ## [v1.1.2] - 2026-08-10
 
 ### 变更

@@ -2,8 +2,7 @@
 package shortid
 
 import (
-	"crypto/rand"
-
+	"github.com/lcylpzls/cryptox"
 	"github.com/lcylpzls/idgenx"
 )
 
@@ -22,7 +21,7 @@ const (
 )
 
 // randRead 可替换的随机源，便于测试注入失败场景。
-var randRead = rand.Read
+var randRead = cryptox.RandomBytes
 
 // Generate 生成 base62 短 ID。
 func Generate(length int) (string, error) {
@@ -35,10 +34,10 @@ func GenerateWithAlphabet(alphabet string, length int) (string, error) {
 		return "", err
 	}
 	out := make([]byte, length)
-	buf := make([]byte, length*2)
 	max := 256 - (256 % len(alphabet))
 	for i := 0; i < length; {
-		if _, err := randRead(buf); err != nil {
+		buf, err := randRead(length * 2)
+		if err != nil {
 			return "", idgenx.ErrRandomFailure
 		}
 		for _, v := range buf {
