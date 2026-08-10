@@ -2,6 +2,21 @@
 
 本项目遵循语义化版本（SemVer）。v1.0.0 之前允许破坏性变更。
 
+## [v1.3.0] - 2026-08-10
+
+### 新增
+
+- `RandomHex(n)`：n 字节安全随机数的十六进制 ID（2n 位小写字符）；
+- `RandomBase64URL(n)`：n 字节安全随机数的 base64url 无填充 ID；
+- 随机字节统一由 `cryptox.RandomBytes` 生成（cryptox 升级 v0.6.7），
+  参数非法返回 `CodeInvalidConfig`，随机源失败返回 `CodeRandomFailure`；
+- 雪花 ID 与 shortid 旧 API 保持不变，各有用处。
+
+### 质量
+
+- 根包与 shortid 子包语句覆盖率保持 100%；race / vet / staticcheck /
+  govulncheck 全绿。
+
 ## [v1.2.0] - 2026-08-10
 
 ### 变更
