@@ -9,6 +9,10 @@ import (
 
 // TestPublicAPI 黑盒冒烟测试：覆盖根包全部转发函数、类型别名与常量。
 func TestPublicAPI(t *testing.T) {
+	if idgenx.Version != "v1.5.2" {
+		t.Fatalf("Version 不符：%s", idgenx.Version)
+	}
+
 	cfg := idgenx.DefaultConfig()
 	if cfg.Epoch.IsZero() {
 		t.Fatal("DefaultConfig 返回零值配置")
