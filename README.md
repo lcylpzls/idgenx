@@ -3,8 +3,7 @@
 自研分布式 ID 生成库：雪花 ID（Snowflake）与短 ID，
 与 errx / logx 生态打通。
 
-> 当前状态：**v1.0.0 正式版**。进入 SemVer 稳定期，
-> v1.x 起承诺无破坏性 API 变更。
+> 当前状态：**v1.5.1**。
 
 性能参考（本机）：雪花 ~243ns/op（0 分配）、短 ID ~934ns/op。
 
@@ -32,10 +31,7 @@ idgenx/
 ├── LICENSE               # MIT 许可
 ├── docs/
 │   ├── README.md          # 文档索引
-│   ├── design.md          # 设计定版（位布局/回拨策略/并发模型/错误码）
 │   ├── api.md             # API 定版（完整签名与语义）
-│   ├── research.md        # 领域调研与设计取舍
-│   ├── roadmap.md         # 版本路线
 │   └── benchmark.md       # 竞品对比与压测报告
 ├── examples/basic/        # 基础示例
 ├── shortid/               # 短 ID 子包
